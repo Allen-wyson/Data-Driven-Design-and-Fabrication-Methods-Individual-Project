@@ -6,8 +6,8 @@ X2 = optimizableVariable('y',[-5 5]);
 vars = [X1,X2];
 explorationRatios = 0.1 : 0.1 : 0.9;
 nExperiments = 3;
-objFuncs = {@rastriginsfcn, @ps_examplefcn};
-funcNames = {'rastriginsfcn', 'ps_example'};
+objFuncs = {@rastriginsfcn, @threeHumpCamel};
+funcNames = {'rastriginsfcn', '3-Hump Camel'};
 
 %% Loop over each objFuncs
 for fIdx = 1 : numel(objFuncs)
@@ -62,13 +62,26 @@ for fIdx = 1 : numel(objFuncs)
     disp(T);
 end
 
+% plot the function surface and contour
+[xg, yg] = meshgrid(linspace(-2,2,200), linspace(-2,2,200));
+Z = arrayfun(@(xx,yy) threeHumpCamel(struct('x',xx,'y',yy)), xg, yg);
+
+figure('Name', [fname ' Surface']);
+surf(xg, yg, Z, 'EdgeColor','none'); shading interp;
+title(['3-Hump Camel Surface']); xlabel('x'); ylabel('y'); zlabel('f(x,y)');
+view(45,30); colorbar;
+
+figure('Name', [fname ' Contour']);
+contourf(xg, yg, Z, 50, 'LineColor','none');
+title(['3-Hump Camel Contour']); xlabel('x'); ylabel('y'); colorbar;
+
 % objective functions
 function f = rastriginsfcn(X)
     xx = [X.x, X.y];
     f = 10*numel(xx) + sum(xx.^2 - 10*cos(2*pi*xx));
 end
 
-function f = ps_examplefcn(X)   % 3-hump camel function
+function f = threeHumpCamel(X)   % 3-hump camel function
     x = X.x;
     y = X.y;
     f  = (2*x^2 - 1.05*x^4 + (x^6)/6 + x*y + y^2);
