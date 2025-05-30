@@ -5,9 +5,15 @@ X1 = optimizableVariable('x',[-5 5]);
 X2 = optimizableVariable('y',[-5 5]);
 vars = [X1,X2];
 explorationRatios = 0.1 : 0.1 : 0.9;
-nExperiments = 3;
+nExperiments = 10;
 objFuncs = {@rastriginsfcn, @threeHumpCamel};
-funcNames = {'rastriginsfcn', '3-Hump Camel'};
+funcNames = {'Rastrigins', '3-Hump Camel'};
+
+%% parallel pool
+% parallel pool
+if isempty(gcp('nocreate'))
+    parpool('AttachedFiles','bo_sweep.m');
+end
 
 %% Loop over each objFuncs
 for fIdx = 1 : numel(objFuncs)
@@ -44,6 +50,7 @@ for fIdx = 1 : numel(objFuncs)
                 'AcquisitionFunctionName','expected-improvement-plus', ...
                 'ExplorationRatio',k, ...
                 'NumSeedPoints',6, ...
+                'UseParallel', true, ...
                 'PlotFcn',{});  % @plotAcquisitionFunction, @plotObjectiveModel,@plotMinObjective
             timevec(j) = results.TotalElapsedTime;
             perfvec(j) = results.MinEstimatedObjective;
@@ -51,18 +58,45 @@ for fIdx = 1 : numel(objFuncs)
 
         avgTime(idx) = mean(timevec);
         avgPerf(idx) = mean(perfvec);
+        perfStd(idx) = std(perfvec);
     end
 
     % save and display results
-    T = table(explorationRatios', avgTime', avgPerf', ...
-        'VariableNames', {'ExplorationRatio', 'AvgTime', 'AvgPerformance'});
+    T = table(explorationRatios', avgTime', avgPerf', perfStd', ...
+        'VariableNames', {'ExplorationRatio', 'AvgTime', 'AvgPerformance', 'StdPerformance'});
     filename = sprintf('bo_avg_results_%s.csv',fname);
     writetable(T, filename);
     fprintf('Results saved to %s\n', filename);
     disp(T);
 end
 
-% plot the function surface and contour
+%% Plot aggregated BO results per function (with ±STD)
+for fIdx = 1:numel(objFuncs)
+    fname = funcNames{fIdx};    
+    % Read in the CSV you just wrote
+    T = readtable(sprintf('bo_avg_results_%s.csv', fname));
+
+    figure('Name', fname, 'NumberTitle','off');
+    % Left axis: performance ±1 STD
+    yyaxis left
+    errorbar(T.ExplorationRatio, T.AvgPerformance, T.StdPerformance, ...
+        '-o','LineWidth',1.2, 'CapSize',10);
+    ylabel('Mean Best Performance \pm 1\,STD');
+    xlabel('ExplorationRatio');
+
+    % Right axis: timing ±1 STD (optional errorbars)
+    yyaxis right
+    plot(T.ExplorationRatio, T.AvgTime, ...
+        '--s','LineWidth',1.2);
+    ylabel('Mean Elapsed Time (s) \pm 1\');
+
+    title(sprintf('BO Exploration Sweep on %s', fname));
+    grid on;
+    legend('Performance','Time','Location','northwest');
+end
+
+
+%% plot the function surface and contour
 [xg, yg] = meshgrid(linspace(-2,2,200), linspace(-2,2,200));
 Z = arrayfun(@(xx,yy) threeHumpCamel(struct('x',xx,'y',yy)), xg, yg);
 
