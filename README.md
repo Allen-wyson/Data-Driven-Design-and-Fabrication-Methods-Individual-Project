@@ -29,12 +29,12 @@ Launch MATLAB and run each script in sequence.
 * **PCA on Iris Dataset**:
 
   ```matlab
-  pca_analysis
+  pca_test
   ```
 * **K-means Clustering**:
 
   ```matlab
-  kmeans_analysis
+  kmeans_test
   ```
 
 ## 📈 Key Findings
