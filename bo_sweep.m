@@ -10,7 +10,6 @@ objFuncs = {@rastriginsfcn, @threeHumpCamel};
 funcNames = {'Rastrigins', '3-Hump Camel'};
 
 %% parallel pool
-% parallel pool
 if isempty(gcp('nocreate'))
     parpool('AttachedFiles','bo_sweep.m');
 end
